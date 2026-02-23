@@ -1,6 +1,6 @@
 # overlay.py
 
-Bulk-overlay text or logo images onto product images. Useful for e-commerce category pages where the same base image is reused across variants (sizes, diameters, etc.).
+Bulk-overlay text or logo images onto product images. Useful for e-commerce category pages where the same base image is reused across variants (sizes, diameters, etc.), or where each product has its own image.
 
 ---
 
@@ -17,6 +17,8 @@ pip install pillow pilmoji --break-system-packages
 
 ## Usage
 
+### Mode 1 — one base image, many outputs
+
 ```bash
 python overlay.py \
   --image base.jpg \
@@ -26,9 +28,23 @@ python overlay.py \
   --font-size 48 \
   --color "#333333" \
   --position bottom-left \
-  --x 20 --y 20 \
-  --overlay-size 150
+  --x 20 --y 20
 ```
+
+### Mode 2 — different image per row (no --image needed)
+
+```bash
+python overlay.py \
+  --csv attributes.csv \
+  --output-dir output \
+  --font ~/Library/Fonts/IBMPlexSans-Medium.ttf \
+  --font-size 48 \
+  --color "#333333" \
+  --position bottom-left \
+  --x 20 --y 20
+```
+
+Mode is **auto-detected** from the CSV — no flag needed.
 
 ---
 
@@ -36,7 +52,7 @@ python overlay.py \
 
 | Argument | Required | Default | Description |
 |---|---|---|---|
-| `--image` | ✓ | — | Base product image (jpg, png, webp) |
+| `--image` | Mode 1 only | — | Base product image (jpg, png, webp) |
 | `--csv` | ✓ | — | CSV file (see format below) |
 | `--output-dir` | | `output` | Folder for output images |
 | `--font` | ✓ for text | — | Path to .ttf font file (`~` supported) |
@@ -51,52 +67,49 @@ python overlay.py \
 
 ## CSV Format
 
-No header row. Three columns per line: `type, value, output_filename`
+No header row. Mode is detected automatically from the first column.
+
+### Mode 1 — shared base image
+First column is `text` or `image`:
+```
+type, value, output_filename
+```
 
 ```
-text,  "📏 200x200mm ⌀1,0mm", image001.jpg
-text,  "📏 100x100mm ⌀1,2mm", image002.jpg
-image, /path/to/logo.png,      image003.jpg
+text,  "📏 200x200mm ⌀1,0mm", sku1321.jpg
+text,  "📏 100x100mm ⌀1,2mm", sku1821.jpg
+image, /path/to/logo.png,      sku1822.jpg
 ```
+
+### Mode 2 — image per row
+First column is the input image path:
+```
+input_image, type, value, output_filename
+```
+
+```
+base1.jpg, text,  "200x200mm ⌀1,0mm",  sku1321.jpg
+base2.jpg, text,  "100x100mm ⌀1,2mm",  sku1821.jpg
+base3.jpg, image, /path/to/logo.png,    sku1822.jpg
+```
+
+### Column reference
 
 | Column | Description |
 |---|---|
+| `input_image` | (Mode 2 only) Path to the base image for this row |
 | `type` | `text` or `image` |
 | `value` | Text string (emoji ok), or path to overlay PNG |
-| `output_filename` | Output filename. Extension determines format (jpg/png). Auto-named `image_0001.jpg` if omitted. |
+| `output_filename` | Output filename. Auto-named `image_0001.jpg` if omitted. |
 
-**Note:** If your text contains a comma (e.g. `⌀1,0mm`), wrap the value in double quotes.
-
----
-
-## Examples
-
-### Text overlay
-```
-text, "200x200mm", product-200x200.jpg
-text, "📏 50×100 cm", foam-50x100.jpg
-text, "⌀ 1,0mm / 5m", wire-1mm-5m.jpg
-```
-
-### Logo overlay
-```
-image, ~/assets/logo.png, product-with-logo.jpg
-```
-
-### Mixed
-```
-text,  "📏 200x200mm ⌀1,0mm", copper-200-1mm.jpg
-image, ~/assets/badge.png,     copper-200-badge.jpg
-text,  "📏 100x100mm ⌀1,2mm", copper-100-1mm.jpg
-```
+> **Note:** If your text contains a comma (e.g. `⌀1,0mm`), wrap the value in double quotes.
 
 ---
 
 ## Font tips
 
-**macOS:**
+**macOS** — list available fonts:
 ```bash
-# List available fonts
 find /System/Library/Fonts /Library/Fonts ~/Library/Fonts -name "*.ttf" -o -name "*.ttc"
 ```
 
@@ -116,7 +129,7 @@ Common paths:
 Install `pilmoji` for emoji rendering. The script prints on startup whether it's active:
 
 ```
-✓ pilmoji found — emoji rendering enabled
+✓ pilmoji enabled
 ⚠ pilmoji not found — emoji will render as boxes
 ```
 
